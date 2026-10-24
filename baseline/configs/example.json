@@ -1,0 +1,13 @@
+{
+  "model": "REPLACE_WITH_EXACT_OPENROUTER_MODEL_ID",
+  "provider": "REPLACE_WITH_AVAILABLE_PROVIDER_SLUG",
+  "mode": "numeric",
+  "language": "fa",
+  "temperature": 0,
+  "max_tokens": 2048,
+  "timeout_seconds": 120,
+  "max_attempts": 3,
+  "retry_base_seconds": 1,
+  "abs_tolerance": 0.000001,
+  "rel_tolerance": 0.000000001
+}

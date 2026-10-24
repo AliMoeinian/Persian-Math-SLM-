@@ -1,0 +1,12 @@
+You are given a math word problem involving the variable x, enclosed in < >.
+
+Instructions:
+• Explain the reasoning steps clearly and completely.
+• All explanations must appear before the final line.
+• The output must end with exactly one final line.
+• The final line must contain only the final numerical answer in the following format:
+x = answer
+• Do not add any text, symbols, whitespace, or punctuation after the final line.
+
+Problem: <{problem}>
+Answer:

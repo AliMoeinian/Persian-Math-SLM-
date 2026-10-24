@@ -1,0 +1,3 @@
+Translate the Persian math word problem below into English. Preserve all quantities, units, mathematical relationships, and the unknown variable x. Do not solve the problem or add explanations. Return only the English translation.
+
+Problem: <{problem}>

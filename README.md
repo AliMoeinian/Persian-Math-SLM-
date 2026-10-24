@@ -20,7 +20,7 @@
 
 Our baseline follows the **zero-shot evaluation pipeline in Section 4.1** of *PMWP: A Benchmark for Math Word Problem Solving in Persian*. This README maps its published components individually: input fields, language settings, output settings, prompt templates, decoding configuration, and evaluation metrics.
 
-**Status: baseline documented; executable inference and evaluation code has not yet been implemented in this repository.** No model runs or reproduced scores are claimed here. This is a component-by-component specification derived from the base paper, not a claim of completed or exact runtime reproduction. Unpublished details are explicitly identified below and must be resolved and recorded before implementation can be considered reproducible.
+**Status: inference and evaluation code implemented and tested offline in [baseline/](baseline/README.md); live API execution and reproduced scores remain pending.** This specification is derived component by component from the base paper. Unpublished details are explicitly identified below; our implementation choices are documented separately. No exact runtime reproduction or benchmark scores are claimed.
 
 The scope is inference with existing models. LoRA, fine-tuning, weight updates, and dataset construction are outside this baseline.
 
@@ -225,17 +225,17 @@ English translation does not improve every model or metric. In particular, DeepS
 
 | Component | Relationship to the base paper | Current repository status |
 | :--- | :--- | :--- |
-| Test-set inference | Section 4.1 | Specified; not executed |
+| Test-set inference | Section 4.1 | Implemented; live evaluation pending |
 | Problem content from `text` | Persian problem statement described in Section 4.1 | Input contract documented |
-| Persian and translated-English paths | Section 4.1 | Specified; not implemented |
-| Numeric and equation output modes | Section 4.1 | Specified; not implemented |
+| Persian and translated-English paths | Section 4.1 | Implemented; tested offline |
+| Numeric and equation output modes | Section 4.1 | Implemented; tested offline |
 | Published solving templates | Prompt boxes on page 78 | Transcribed above |
-| Temperature zero / reported greedy decoding | Page 79 | Documented; API behavior not verified |
-| AnsAcc and EqValueAcc | Section 4.1 and Table 6 | Defined; evaluator not implemented |
+| Temperature zero / reported greedy decoding | Page 79 | Implemented; live API behavior not verified |
+| AnsAcc and EqValueAcc | Section 4.1 and Table 6 | Implemented; tested offline |
 | Original-language/system/translation prompts | Not fully published | Explicit reproduction gaps |
 | Validation-first development policy | Our study protocol | Documented separately from paper claims |
 
-This mapping makes the baseline traceable to the base paper without claiming unpublished details, completed implementation, or experimental results.
+This mapping makes the baseline traceable to the base paper without claiming unpublished author details or completed live experiments. See the [implementation guide](baseline/README.md) for commands, tests, and local scoring policies.
 
 ## Citation
 

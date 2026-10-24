@@ -1,0 +1,4 @@
+[
+  {"id": 1, "text": "نیکو 10 مهمان دارد. هر مهمان 8 تکه می‌خورد. تعداد کل x است.", "answer": 80.0, "pure_template": "x=NUM*NUM", "number_list": ["10", "8"]},
+  {"id": 2, "text": "20 سیب بین 4 نفر تقسیم می‌شود. سهم هر نفر x است.", "answer": 5.0, "pure_template": "x=NUM/NUM", "number_list": ["20", "4"]}
+]
