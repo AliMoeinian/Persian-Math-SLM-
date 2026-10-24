@@ -255,3 +255,100 @@ Please cite PMWP when using the benchmark or its baseline protocol:
   url = "https://aclanthology.org/2026.silkroadnlp-1.8/"
 }
 ```
+
+---
+
+## Implemented Baseline
+
+The inference-only baseline described above is now implemented in [`baseline/`](baseline/). It follows the **published zero-shot workflow in Section 4.1 of the original PMWP paper**, with explicit local choices wherever the authors do not provide enough detail for exact reproduction. Implementation and offline validation are complete; live OpenRouter runs and reproduced benchmark scores remain pending.
+
+### Repository organization
+
+Code, configuration, prompts, tests, and experimental outputs have separate locations:
+
+```text
+Persian-Math-SLM-/
+├── README.md                         # Paper-derived baseline specification and implementation overview
+├── Main Paper.pdf
+├── trainset.json                     # Original benchmark files, kept unchanged
+├── validset.json
+├── testset.json
+├── .github/workflows/baseline.yml     # Automated quality checks
+└── baseline/
+    ├── README.md                     # Installation, CLI usage, scoring policies, and limitations
+    ├── pyproject.toml                # Package metadata and development tools
+    ├── uv.lock                       # Locked dependencies
+    ├── configs/
+    │   └── example.json              # Model/provider and inference configuration template
+    ├── src/pmwp_baseline/
+    │   ├── config.py                 # Configuration validation
+    │   ├── data.py                   # JSON/JSONL loading and dataset validation
+    │   ├── prompts.py                # Shared prompt rendering and prompt hashes
+    │   ├── prompts/                  # Versioned solving, translation, and system prompts
+    │   ├── client.py                 # OpenRouter HTTPS transport and bounded retries
+    │   ├── runner.py                 # Pipeline orchestration, persistence, and resume
+    │   ├── parsing.py                # Final-line extraction and restricted arithmetic evaluation
+    │   ├── evaluation.py             # AnsAcc, EqValueAcc, and diagnostic summaries
+    │   ├── telemetry.py              # Token, cost, and latency summaries
+    │   └── cli.py                    # Validation, inference, re-scoring, and comparison commands
+    ├── tests/
+    │   ├── unit/                     # Component behavior and failure cases
+    │   ├── integration/              # Offline pipeline and CLI integration
+    │   └── fixtures/                 # Small synthetic test inputs
+    └── results/
+        ├── README.md                 # Artifact definitions and publication policy
+        └── <run-id>/                 # One directory per experiment; generated when run
+            ├── manifest.json
+            ├── predictions.jsonl
+            ├── summary.json
+            ├── failures.jsonl
+            └── reevaluated-summary.json  # Optional offline re-scoring output
+```
+
+Generated run directories are ignored by Git by default. Selected, reviewed results can be explicitly committed for publication. The result filenames above describe what an execution produces; they do not indicate that real model results already exist.
+
+### What was implemented
+
+All inference goes through **OpenRouter**. Each run selects one explicit model, provider, input-language setting, and output mode. Provider fallback is disabled, and unsupported requested parameters must not be silently ignored. The same prompt templates and configured settings are used across models.
+
+The pipeline reads only the problem's `text` into model context. Persian configurations solve that original text directly. English configurations first translate it using the same configured model/provider, then issue a separate solving request. Numeric mode extracts `x = answer`; equation mode extracts `x = expression` and computes its value using a bounded arithmetic parser. Gold answers and reference equations are never included in requests.
+
+Predictions are written incrementally, with a flush and filesystem sync after each problem. A manifest records dataset fingerprints, selected IDs, complete configuration, prompt texts and hashes, source hashes, and the Git revision. Resume requires matching inputs and settings and skips already recorded examples, including terminal failures. Separate run-directory locking prevents concurrent writers from mixing results.
+
+### How prompts were handled
+
+| Prompt files | Origin and treatment |
+| :--- | :--- |
+| `numeric.en.txt`, `equation.en.txt` | Published English-translated templates from the paper, with PDF line wrapping normalized and the problem placeholder rendered at runtime |
+| `numeric.fa.txt`, `equation.fa.txt` | Our faithful Persian translations of those published templates; the authors' exact original Persian wording is unavailable |
+| `translation.txt` | Our translation-only instruction, preserving quantities, units, relationships, and `x`; the original translation prompt was not reported |
+| `system.txt` | Our mathematical-problem-solver instruction; the paper describes this role but does not publish its exact wording |
+
+Prompt files live in [`baseline/src/pmwp_baseline/prompts/`](baseline/src/pmwp_baseline/prompts/). Their contents are shared across models and captured in each run manifest. These local translations and missing-prompt replacements are disclosed implementation choices, not verbatim prompts recovered from the authors.
+
+### Alignment with the original paper
+
+| Paper component | Implemented behavior |
+| :--- | :--- |
+| Zero-shot inference without task-specific training | No weight updates, LoRA, or worked in-context examples |
+| Persian problem input | Only `text` supplies problem content |
+| Direct Persian and translated-English evaluation | Both paths are implemented; translation uses the evaluated model |
+| Numeric answer and symbolic equation generation | Both output modes are implemented, including requests for reasoning before the final line |
+| Temperature zero | Configuration enforces `temperature = 0`; exact provider decoding behavior still requires live verification |
+| Test-set evaluation | Full-test execution is supported; validation is used separately for our development and smoke checks |
+| AnsAcc | Extracted numerical prediction compared with the gold `answer` |
+| EqValueAcc | Generated expression's computed value compared with the gold `answer`, without requiring an exact equation-string match |
+
+**The published pipeline and metric definitions follow the base paper; full equivalence with the authors' private execution details is not claimed.** OpenRouter is our API access layer, whereas the paper describes the models' respective APIs. Exact historical model availability, provider defaults, and runtime behavior must be checked before reporting a reproduction.
+
+Output-token limits, numerical tolerances, parsing/normalization rules, timeout/retry behavior, and treatment of malformed responses were not fully reported by the paper. Our chosen policies are documented in the [implementation guide](baseline/README.md). For example, invalid or missing predictions remain in the evaluation denominator, and generated expressions are evaluated without unrestricted code execution. These policies make our runs inspectable without attributing unpublished settings to the original authors.
+
+### Additional analysis and quality checks
+
+The paper's two zero-shot metrics remain the primary scores. Separate diagnostics add token consumption, reported cost, reported cost per correct answer, full-response latency distributions, retry/API failure counts, output validity, formatting compliance, and accuracy by problem structure. English runs include translation and solving costs separately and together. Missing usage remains unknown rather than being treated as zero; time to first token is not measured by the nonstreaming client.
+
+Offline commands can re-score saved responses and compare complete runs on matching examples. Summaries include Wilson accuracy intervals; paired comparisons include a deterministic bootstrap interval for the accuracy difference. These example-based intervals do not measure variability across repeated API runs.
+
+**Local verification completed:** 20 unit/integration tests passed, along with lint, formatting, strict type checks, validation of all three supplied benchmark files, and a wheel installation check that confirmed all six prompt files are packaged. Tests cover parsing safety, request construction, retries, translation/solving flow, scoring, result persistence, interruption/resume, directory locking, and incompatible-run rejection. They use synthetic responses and make no paid requests.
+
+GitHub Actions is configured for Python 3.11–3.13; the local results above do not establish remote CI execution. The next experimental step is a small validation smoke run after securely configuring `OPENROUTER_API_KEY` and selecting available model/provider identifiers. See [`baseline/README.md`](baseline/README.md) for commands.
