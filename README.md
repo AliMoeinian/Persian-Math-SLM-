@@ -362,3 +362,10 @@ Our **final evaluation split is `testset.json`**, matching the original paper's 
 We have identified inconsistencies in the supplied test split. A planned phase of this study is to audit and classify test-set issues, review the original paper's quality assessment, and produce documented corrections before using a corrected benchmark for final evaluation. This phase is not complete. Original benchmark files and split membership will be preserved, and any corrected version and its results will be distinguished from the original version. Benchmark correction is separate from establishing that the pipeline itself works correctly.
 
 Infrastructure-only retry and a separate recovery pass are implemented; incorrect answers, invalid output formats, `missing_content`, and `invalid_response` are not resubmitted. New diagnostic metrics and error-attribution methods remain subject to protocol review before implementation.
+
+
+### Timing and token accounting
+
+New runs use telemetry schema 2: individual OpenRouter attempts retain response timing, local JSON-processing timing, actual retry waits, and provider-reported usage. Summaries separate successful API responses from failures independently of mathematical correctness, and separate translation from solving. Initial problem processing, recovery processing, and cumulative work have distinct definitions; cumulative recovery work is not labeled end-to-end elapsed latency.
+
+Input/output/total tokens, cost, and available reasoning/cache details carry explicit coverage counts. Reasoning and cache counts are subsets, not additions to total tokens. Missing reasoning information does not establish whether a model supports or uses reasoning; the current policy remains provider-default and is recorded. Full definitions and legacy-artifact limitations are in [baseline/METRICS.md](baseline/METRICS.md). Baseline execution and scoring do not invoke an LLM judge; downstream review is separate.

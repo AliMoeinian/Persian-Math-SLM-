@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol
 
-from .client import APIError, Completion
+from .client import APIError, Completion, utc_now
 from .config import Config
 from .data import Problem, fingerprint, load_problems
 from .evaluation import correct, summarize
@@ -57,6 +57,7 @@ def source_hashes() -> dict[str, str]:
 
 
 def infer(problem: Problem, config: Config, client: Client) -> dict[str, Any]:
+    started_at = utc_now()
     start = time.perf_counter()
     calls: list[dict[str, Any]] = []
     text = problem.text
@@ -102,7 +103,16 @@ def infer(problem: Problem, config: Config, client: Client) -> dict[str, Any]:
 
     parsed = parse_response(content, config.mode)
     length = len(problem.text.split())
+    is_correct = correct(parsed.value, problem.answer, config)
+    elapsed = time.perf_counter() - start
     return {
+        "timing": {
+            "started_at": started_at,
+            "completed_at": utc_now(),
+            "initial_pass_processing_seconds": elapsed,
+            "initial_pass_outcome": "success" if status == "ok" else "failure",
+            "cumulative_processing_seconds": elapsed,
+        },
         "id": problem.id,
         "text": problem.text,
         "answer": problem.answer,
@@ -111,8 +121,8 @@ def infer(problem: Problem, config: Config, client: Client) -> dict[str, Any]:
         "status": status,
         "calls": calls,
         "parsed": asdict(parsed),
-        "correct": correct(parsed.value, problem.answer, config),
-        "latency_seconds": time.perf_counter() - start,
+        "correct": is_correct,
+        "latency_seconds": elapsed,
         "features": {
             "pure_template": problem.pure_template,
             "number_count": problem.number_count,
@@ -149,7 +159,7 @@ def run(
         "split": split,
         "prompt_hashes": prompt_hashes(),
         "source_hashes": source_hashes(),
-        "schema_version": 1,
+        "schema_version": 2,
     }
     output.mkdir(parents=True, exist_ok=True)
     with (output / ".lock").open("w") as lock:
@@ -177,6 +187,9 @@ def run(
                     "dataset_path": str(dataset.resolve()),
                     "full_dataset_size": len(problems),
                     "is_full_test": split == "test" and len(selected) == len(problems),
+                    "telemetry_schema_version": 2,
+                    "reasoning_policy": "provider_default; capability is not inferred from usage",
+                    "timing_scope": "client-observed OpenRouter response and local processing; no TTFT",
                 },
             )
         predictions = output / "predictions.jsonl"

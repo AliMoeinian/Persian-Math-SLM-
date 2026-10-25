@@ -68,6 +68,7 @@ def recover(source: Path, destination: Path, client: Client) -> dict[str, Any]:
             raise ValueError("Recovery destination must be empty")
         manifest["recovery_parent"] = str(source.resolve())
         manifest["recovery_source_hashes"] = source_hashes()
+        manifest["telemetry_schema_version"] = 2
         manifest["recovery_ids"] = [r["id"] for r in rows if eligible(r)]
         write_json(destination / "manifest.json", manifest)
         recovered = []
@@ -91,7 +92,24 @@ def recover(source: Path, destination: Path, client: Client) -> dict[str, Any]:
                             for c in row["calls"]
                             if not c.get("metadata", {}).get("reused_from_parent")
                         ]
-                        row["latency_seconds"] += original["latency_seconds"]
+                        current_timing = row["timing"]
+                        parent_timing = original.get("timing") or {}
+                        initial = parent_timing.get("initial_pass_processing_seconds")
+                        prior = parent_timing.get("cumulative_processing_seconds")
+                        recovery_seconds = current_timing["initial_pass_processing_seconds"]
+                        row["timing"] = {
+                            "started_at": parent_timing.get("started_at"),
+                            "completed_at": current_timing["completed_at"],
+                            "recovery_started_at": current_timing["started_at"],
+                            "initial_pass_processing_seconds": initial,
+                            "initial_pass_outcome": parent_timing.get("initial_pass_outcome"),
+                            "recovery_processing_seconds": recovery_seconds,
+                            "cumulative_processing_seconds": prior + recovery_seconds
+                            if prior is not None
+                            else None,
+                            "includes_interpass_idle_time": False,
+                        }
+                        # Keep this legacy alias local to the latest infer call, never cumulative.
                         row["recovery_previous_status"] = original["status"]
                     stream.write(json.dumps(row, ensure_ascii=False, allow_nan=False) + "\n")
                     stream.flush()

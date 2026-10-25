@@ -114,8 +114,8 @@ Re-scoring writes a new `reevaluated-summary.json` without rewriting raw predict
 Beyond the paper metrics, summaries provide:
 
 - Wilson 95% accuracy interval; invalid output, format compliance, API failure, and retry counts.
-- Mean, median, and nearest-rank p95 full-response latency per stage and end-to-end. Retry waits are included. Nonstreaming means time to first token is not measured.
-- Provider-reported input/output/total tokens and cost, per stage and combined. Unknown values remain `null` with missing-call counts; reasoning/cache details are preserved in raw usage when provided.
+- Count, mean, median, and nearest-rank p95 for per-attempt response time, logical-request time, and problem processing; successes and failures are separated. Recovery work has a distinct cumulative duration. See [the measurement contract](METRICS.md) for exact boundaries. Nonstreaming means time to first token is not measured.
+- Provider-reported input/output/total tokens and cost, per stage and combined, summed over individual attempts. Missing values remain unknown with explicit attempt-coverage counts. Reasoning and cache details are summarized as subsets and are never added to total tokens.
 - Reported cost per correct answer. This can undercount charges when failed requests have no usage response; it is not a complete billing audit.
 - Accuracy grouped by `pure_template`, text-length bins, number count, and operation-symbol count in `pure_template`. The latter is a structural diagnostic and includes unary minus symbols.
 
@@ -136,6 +136,10 @@ uv run --frozen pmwp-baseline recover-network results/test-001 \
   --output results/test-001-network-recovery
 ```
 
-Only `transport_error` and HTTP 408/429/500/502/503/504 are selected. Incorrect answers, parsing/format failures, `missing_content`, `invalid_response`, and authentication/configuration errors are never selected. Successful translation stages are replayed locally rather than submitted again. The original run remains unchanged; cumulative calls, usage, and latency are retained in the recovered run. This command supports one bounded recovery pass from an original completed run. It does not resume an interrupted recovery directory; preserve that directory if interrupted. Existing within-request bounded retries still apply only to transport and eligible HTTP failures.
+Only `transport_error` and HTTP 408/429/500/502/503/504 are selected. Incorrect answers, parsing/format failures, `missing_content`, `invalid_response`, and authentication/configuration errors are never selected. Successful translation stages are replayed locally rather than submitted again. The original run remains unchanged; the recovered run retains cumulative attempt history and usage, and separately names initial, recovery, and cumulative processing durations. This command supports one bounded recovery pass from an original completed run. It does not resume an interrupted recovery directory; preserve that directory if interrupted. Existing within-request bounded retries still apply only to transport and eligible HTTP failures.
 
 New responses without usable content retain available response metadata (`usage`, choices, finish reason, and identifiers) for investigation, without being retried. Old missing-content records cannot be retroactively reconstructed. These are adapter status labels, not statements produced by the model or proof of incomplete problem input.
+
+## Timing and usage contract
+
+See [METRICS.md](METRICS.md) for schema-2 field definitions, measurement populations, provider-default reasoning policy, legacy artifact handling, and persistence limitations. No LLM judge is called by baseline inference or scoring; downstream review remains separate.

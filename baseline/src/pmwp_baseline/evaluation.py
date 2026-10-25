@@ -4,7 +4,7 @@ import math
 from typing import Any
 
 from .config import Config
-from .telemetry import distribution, usage_summary
+from .telemetry import problem_timing, usage_summary
 
 
 def correct(value: float | None, gold: float, config: Config) -> bool:
@@ -65,12 +65,13 @@ def summarize(rows: list[dict[str, Any]], expected: int, config: Config) -> dict
         "format_compliant": sum(r["parsed"]["format_compliant"] for r in rows),
         "unsimplified_equations": sum(r["parsed"]["unsimplified"] is True for r in rows),
         "api_failed_examples": sum(r["status"] == "api_error" for r in rows),
-        "retry_attempts": sum(c.get("attempts", 1) - 1 for c in calls),
-        "end_to_end_latency_seconds": distribution([r["latency_seconds"] for r in rows]),
+        "retry_attempts": sum(max(0, c.get("attempts", 1) - 1) for c in calls),
+        "problem_timing": problem_timing(rows),
+        "telemetry_schema_version": 2,
         "telemetry": {
             stage: usage_summary([c for c in calls if c["stage"] == stage])
             for stage in ("translation", "solving")
         },
-        "usage_caveat": "Provider-reported usage excludes unknown charges from failed attempts.",
+        "usage_caveat": "Sums cover reported attempts only; reasoning/cache are subsets, not additive totals. Missing usage is unknown, never zero.",
         "breakdown": groups,
     }
