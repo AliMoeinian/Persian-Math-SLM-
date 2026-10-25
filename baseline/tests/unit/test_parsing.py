@@ -51,3 +51,9 @@ class ArithmeticTests(unittest.TestCase):
         self.assertFalse(parse_response("x = 80\n", "numeric").format_compliant)
         with self.assertRaises(ValueError):
             parse_response("x = 1", "unknown")
+
+    def test_numeric_format_rejects_expression(self):
+        parsed = parse_response("x = 1 + 2", "numeric")
+        self.assertFalse(parsed.valid)
+        self.assertFalse(parsed.format_compliant)
+        self.assertFalse(parse_response("x = 1 / 0", "equation").format_compliant)

@@ -87,3 +87,21 @@ class ClientTests(unittest.TestCase):
     def test_missing_key(self):
         with patch.dict("os.environ", {}, clear=True), self.assertRaises(ValueError):
             OpenRouterClient(self.config)
+
+    def test_null_content_preserves_evidence_without_retry(self):
+        body = {
+            "id": "mock",
+            "choices": [{"message": {"content": None}, "finish_reason": "length"}],
+            "usage": {"completion_tokens": 2048},
+        }
+        requests = []
+
+        def opener(request, **kwargs):
+            requests.append(request)
+            return Response(json.dumps(body).encode())
+
+        with self.assertRaises(APIError) as raised:
+            OpenRouterClient(self.config, api_key="test", opener=opener).complete([])
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(raised.exception.metadata["usage"]["completion_tokens"], 2048)
+        self.assertEqual(raised.exception.metadata["choices"][0]["finish_reason"], "length")

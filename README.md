@@ -352,3 +352,13 @@ Offline commands can re-score saved responses and compare complete runs on match
 **Local verification completed:** 20 unit/integration tests passed, along with lint, formatting, strict type checks, validation of all three supplied benchmark files, and a wheel installation check that confirmed all six prompt files are packaged. Tests cover parsing safety, request construction, retries, translation/solving flow, scoring, result persistence, interruption/resume, directory locking, and incompatible-run rejection. They use synthetic responses and make no paid requests.
 
 GitHub Actions is configured for Python 3.11–3.13; the local results above do not establish remote CI execution. The next experimental step is a small validation smoke run after securely configuring `OPENROUTER_API_KEY` and selecting available model/provider identifiers. See [`baseline/README.md`](baseline/README.md) for commands.
+
+### Current development stage and benchmark correction
+
+We currently use **`validset.json`** for pipeline testing, prompt development, and validation of data transfer, response parsing, scoring, and result persistence. Here, testing means development and verification of the implementation; it is not the final benchmark evaluation. The training split is not required for this inference-only study.
+
+Our **final evaluation split is `testset.json`**, matching the original paper's zero-shot test-set evaluation in Section 4.1 and Table 6. Prompts and inference/scoring settings must be frozen before final model comparison.
+
+We have identified inconsistencies in the supplied test split. A planned phase of this study is to audit and classify test-set issues, review the original paper's quality assessment, and produce documented corrections before using a corrected benchmark for final evaluation. This phase is not complete. Original benchmark files and split membership will be preserved, and any corrected version and its results will be distinguished from the original version. Benchmark correction is separate from establishing that the pipeline itself works correctly.
+
+Infrastructure-only retry and a separate recovery pass are implemented; incorrect answers, invalid output formats, `missing_content`, and `invalid_response` are not resubmitted. New diagnostic metrics and error-attribution methods remain subject to protocol review before implementation.

@@ -89,7 +89,12 @@ def infer(problem: Problem, config: Config, client: Client) -> dict[str, Any]:
                 content = completion.content
         except APIError as exc:
             call.update(
-                {"error": exc.category, "attempts": exc.attempts, "latency_seconds": exc.elapsed}
+                {
+                    "error": exc.category,
+                    "attempts": exc.attempts,
+                    "latency_seconds": exc.elapsed,
+                    "metadata": exc.metadata,
+                }
             )
             calls.append(call)
             status = "api_error"

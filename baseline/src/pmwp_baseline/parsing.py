@@ -90,4 +90,4 @@ def parse_response(content: str, mode: str) -> Parsed:
         unsimplified = not numeric_literal if mode == "equation" else None
         return Parsed(expression, value, True, compliant, unsimplified, None)
     except ValueError as exc:
-        return Parsed(expression, None, False, compliant, None, str(exc))
+        return Parsed(expression, None, False, False, None, str(exc))

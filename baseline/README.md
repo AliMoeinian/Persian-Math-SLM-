@@ -126,3 +126,16 @@ These group fields are used only after inference for analysis, never as model in
 Unit tests cover data encodings and invalid data, prompt isolation, config validation, exact/bounded arithmetic, unsafe syntax rejection, output extraction, tolerances, unknown usage, payload construction, authentication failures, and bounded retries. Integration tests use an injected fake transport/client to exercise translation → solving, scoring, persistence, interruption/resume, changed-config rejection, corrupted artifacts, offline re-scoring, paired comparison, and CLI dispatch. They make **no external requests**.
 
 GitHub Actions is configured to run lint, formatting, strict type checking, tests, and benchmark validation on Python 3.11–3.13. Local validation does not establish that remote CI has run. Live API smoke testing is a separate manual step; no test sends paid requests automatically.
+
+## Infrastructure-only recovery pass
+
+After finishing the original pass, recover transient network/service failures into a **new** directory:
+
+```bash
+uv run --frozen pmwp-baseline recover-network results/test-001 \
+  --output results/test-001-network-recovery
+```
+
+Only `transport_error` and HTTP 408/429/500/502/503/504 are selected. Incorrect answers, parsing/format failures, `missing_content`, `invalid_response`, and authentication/configuration errors are never selected. Successful translation stages are replayed locally rather than submitted again. The original run remains unchanged; cumulative calls, usage, and latency are retained in the recovered run. This command supports one bounded recovery pass from an original completed run. It does not resume an interrupted recovery directory; preserve that directory if interrupted. Existing within-request bounded retries still apply only to transport and eligible HTTP failures.
+
+New responses without usable content retain available response metadata (`usage`, choices, finish reason, and identifiers) for investigation, without being retried. Old missing-content records cannot be retroactively reconstructed. These are adapter status labels, not statements produced by the model or proof of incomplete problem input.

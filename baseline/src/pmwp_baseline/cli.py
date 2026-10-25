@@ -12,6 +12,7 @@ from .config import Config, load_config
 from .data import fingerprint, load_problems
 from .evaluation import correct, summarize
 from .parsing import parse_response
+from .recovery import recover
 from .runner import read_rows, run, write_json
 
 
@@ -80,6 +81,11 @@ def main() -> int:
     execute.add_argument("--split", choices=["validation", "test", "smoke"], required=True)
     execute.add_argument("--limit", type=int)
     execute.add_argument("--resume", action="store_true")
+    recovery = commands.add_parser(
+        "recover-network", help="New pass for infrastructure failures only"
+    )
+    recovery.add_argument("source", type=Path)
+    recovery.add_argument("--output", type=Path, required=True)
     score = commands.add_parser("evaluate", help="Re-score saved outputs without API requests")
     score.add_argument("directory", type=Path)
     score.add_argument("--dataset", type=Path, required=True)
@@ -102,6 +108,10 @@ def main() -> int:
                 split=args.split,
                 resume=args.resume,
             )
+        elif args.command == "recover-network":
+            manifest = json.loads((args.source / "manifest.json").read_text())
+            config = Config(**manifest["identity"]["config"])
+            result = recover(args.source, args.output, OpenRouterClient(config))
         elif args.command == "evaluate":
             result = evaluate(args.directory, args.dataset)
         else:

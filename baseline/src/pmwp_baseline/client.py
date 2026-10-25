@@ -20,11 +20,14 @@ class Completion:
 
 
 class APIError(RuntimeError):
-    def __init__(self, category: str, attempts: int, elapsed: float) -> None:
+    def __init__(
+        self, category: str, attempts: int, elapsed: float, metadata: dict[str, Any] | None = None
+    ) -> None:
         super().__init__(category)
         self.category = category
         self.attempts = attempts
         self.elapsed = elapsed
+        self.metadata = metadata or {}
 
 
 class OpenRouterClient:
@@ -71,17 +74,24 @@ class OpenRouterClient:
             try:
                 with self.opener(request, timeout=config.timeout_seconds) as response:
                     data = json.loads(response.read())
+                metadata = {
+                    k: data[k]
+                    for k in ("id", "model", "provider", "usage", "choices")
+                    if isinstance(data, dict) and k in data
+                }
+                metadata["usage"] = data.get("usage") if isinstance(data.get("usage"), dict) else {}
                 choices = data.get("choices")
                 if data.get("error") or not isinstance(choices, list) or not choices:
-                    raise APIError("invalid_response", attempt, self.clock() - start)
+                    raise APIError("invalid_response", attempt, self.clock() - start, metadata)
                 choice = choices[0]
                 content = choice.get("message", {}).get("content")
                 if not isinstance(content, str):
-                    raise APIError("missing_content", attempt, self.clock() - start)
+                    raise APIError("missing_content", attempt, self.clock() - start, metadata)
                 return Completion(
                     content,
                     {
                         "response_id": data.get("id"),
+                        "response_choices": choices,
                         "model": data.get("model"),
                         "provider": data.get("provider"),
                         "usage": data.get("usage") if isinstance(data.get("usage"), dict) else {},
