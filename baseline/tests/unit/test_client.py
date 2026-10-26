@@ -105,3 +105,19 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(len(requests), 1)
         self.assertEqual(raised.exception.metadata["usage"]["completion_tokens"], 2048)
         self.assertEqual(raised.exception.metadata["choices"][0]["finish_reason"], "length")
+
+    def test_output_budget_explicit_default_and_provider_default(self):
+        for budget in (32768, 65536, None):
+            requests = []
+
+            def opener(request, **kwargs):
+                requests.append(json.loads(request.data))
+                return response()
+
+            config = Config(**{**self.config.to_dict(), "max_tokens": budget})
+            OpenRouterClient(config, api_key="test", opener=opener).complete([])
+            if budget is None:
+                self.assertNotIn("max_tokens", requests[0])
+            else:
+                self.assertEqual(requests[0]["max_tokens"], budget)
+        self.assertEqual(self.config.max_tokens, 32768)

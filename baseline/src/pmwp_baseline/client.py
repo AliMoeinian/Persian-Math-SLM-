@@ -78,7 +78,6 @@ class OpenRouterClient:
             "model": config.model,
             "messages": messages,
             "temperature": config.temperature,
-            "max_tokens": config.max_tokens,
             "provider": {
                 "only": [config.provider],
                 "allow_fallbacks": False,
@@ -87,6 +86,8 @@ class OpenRouterClient:
             "usage": {"include": True},
             "stream": False,
         }
+        if config.max_tokens is not None:
+            payload["max_tokens"] = config.max_tokens
         request = urllib.request.Request(
             ENDPOINT,
             data=json.dumps(payload).encode(),

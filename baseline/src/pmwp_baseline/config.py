@@ -14,7 +14,7 @@ class Config:
     language: str
     provider: str
     temperature: float = 0.0
-    max_tokens: int = 2048
+    max_tokens: int | None = 32768
     timeout_seconds: float = 120.0
     max_attempts: int = 3
     retry_base_seconds: float = 1.0
@@ -28,7 +28,9 @@ class Config:
             raise ValueError("Invalid mode/language")
         if self.temperature != 0:
             raise ValueError("Paper baseline requires temperature=0")
-        if not (type(self.max_tokens) is int and 1 <= self.max_tokens <= 131072):
+        if self.max_tokens is not None and not (
+            type(self.max_tokens) is int and self.max_tokens >= 1
+        ):
             raise ValueError("Invalid max_tokens")
         if not (type(self.max_attempts) is int and 1 <= self.max_attempts <= 5):
             raise ValueError("max_attempts must be between 1 and 5")

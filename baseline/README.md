@@ -51,7 +51,7 @@ Copy `configs/example.json` to a local configuration file. Replace the placehold
 | `en` | `numeric` | Same model translates → English → answer |
 | `en` | `equation` | Same model translates → English → expression |
 
-Temperature is required to be **zero**, matching the paper. The example's `max_tokens=2048`, timeout, retry settings, and numerical tolerances are **our explicit choices**, not values recovered from the paper. Keep them fixed across compared runs. Unspecified decoding parameters use provider defaults; record that limitation when reporting results. Provider routing is pinned with `only`, fallback is disabled, and parameter support is required. The API's returned model/provider identifiers and finish reason are saved.
+Temperature is required to be **zero**, matching the paper. The default/example's `max_tokens=32768`, timeout, retry settings, and numerical tolerances are **our explicit choices**, not values recovered from the paper. Keep them fixed across compared runs. Unspecified decoding parameters use provider defaults; record that limitation when reporting results. Provider routing is pinned with `only`, fallback is disabled, and parameter support is required. The API's returned model/provider identifiers and finish reason are saved.
 
 Enter `OPENROUTER_API_KEY` through secure cloud environment settings. Never commit or paste it into configuration files. The CLI reads it only for `run`; offline validation, evaluation, comparison, and tests need no credentials. HTTPS access to `openrouter.ai` is required.
 
@@ -143,3 +143,7 @@ New responses without usable content retain available response metadata (`usage`
 ## Timing and usage contract
 
 See [METRICS.md](METRICS.md) for schema-2 field definitions, measurement populations, provider-default reasoning policy, legacy artifact handling, and persistence limitations. No LLM judge is called by baseline inference or scoring; downstream review remains separate.
+
+## Output budget
+
+The old 2,048-token default is replaced by **32,768**. This is our engineering choice, not a value reported by PMWP. Set `max_tokens` to a positive integer to choose an explicit budget, or to JSON `null` to omit it from the API request and use provider defaults. Omission does not mean unlimited output; provider defaults, context limits, and maximum completion limits still apply. Incompatible explicit limits must be resolved for the selected provider, not silently reduced. Reasoning tokens can consume the output budget. Freeze and report the chosen setting before final evaluation; never mix old/new budgets within a resumed run. Larger budgets can increase time and cost. No model requests were made to test this configuration change.

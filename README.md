@@ -369,3 +369,8 @@ Infrastructure-only retry and a separate recovery pass are implemented; incorrec
 New runs use telemetry schema 2: individual OpenRouter attempts retain response timing, local JSON-processing timing, actual retry waits, and provider-reported usage. Summaries separate successful API responses from failures independently of mathematical correctness, and separate translation from solving. Initial problem processing, recovery processing, and cumulative work have distinct definitions; cumulative recovery work is not labeled end-to-end elapsed latency.
 
 Input/output/total tokens, cost, and available reasoning/cache details carry explicit coverage counts. Reasoning and cache counts are subsets, not additions to total tokens. Missing reasoning information does not establish whether a model supports or uses reasoning; the current policy remains provider-default and is recorded. Full definitions and legacy-artifact limitations are in [baseline/METRICS.md](baseline/METRICS.md). Baseline execution and scoring do not invoke an LLM judge; downstream review is separate.
+
+
+### Updated output budget
+
+The implementation default and example now use **32,768 output tokens**, replacing the former 2,048-token smoke-test budget. PMWP does not report this parameter; it is our explicit configuration choice. `max_tokens: null` omits the parameter and relies on provider defaults, which are not unlimited. Provider limits still apply. Historical results are unchanged and must not be compared as if their output budgets were identical.
